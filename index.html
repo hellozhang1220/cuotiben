@@ -54,31 +54,57 @@
           <datalist id="kp-list"></datalist>
         </label>
 
-        <div class="field-label">题目图片（拍照 / 相册，可多张）</div>
+        <!-- 题目图片 + 自动识别题目文字 -->
+        <div class="field-label">题目图片（拍照 / 相册，可多张）<span class="req">*</span></div>
         <div class="photo-bar">
           <label class="photo-btn">
             📷 拍照/选图
             <input id="in-photos" type="file" accept="image/*" capture="environment" multiple hidden />
           </label>
-          <span class="photo-hint" id="photoHint">建议横屏拍清楚</span>
+          <button class="ocr-btn" id="btn-ocr-question" type="button">🤖 识别题目文字</button>
         </div>
+        <div class="photo-hint">提示：图片若同时含题目和答案，会自动只提取题目；原图可在详情里点开查看。</div>
         <div class="thumbs" id="in-thumbs"></div>
 
         <label class="field">
-          <span class="field-label">题干（可选，图片看不清可补录）</span>
-          <textarea id="in-question" rows="2" placeholder="可留空，以图片为准"></textarea>
+          <span class="field-label">题干（可编辑，识别后请核对）<span class="req">*</span></span>
+          <textarea id="in-question" rows="2" placeholder="由图片识别或手动填写，以图片为准"></textarea>
         </label>
+
+        <!-- 我的错答：支持图片 -->
         <label class="field">
-          <span class="field-label">我的错答</span>
-          <textarea id="in-wrong" rows="2" placeholder="当时怎么答的"></textarea>
+          <span class="field-label">我的错答<span class="req">*</span></span>
+          <textarea id="in-wrong" rows="2" placeholder="当时怎么答的（可上传图片）"></textarea>
         </label>
+        <div class="photo-bar">
+          <label class="photo-btn">
+            📷 上传错答图片
+            <input id="in-wrong-photos" type="file" accept="image/*" capture="environment" multiple hidden />
+          </label>
+          <button class="ocr-btn" id="btn-ocr-wrong" type="button">🤖 识别文字</button>
+        </div>
+        <div class="thumbs" id="in-wrong-thumbs"></div>
+
+        <!-- 正确答案：支持图片 + 识别 -->
         <label class="field">
-          <span class="field-label">正确答案</span>
-          <textarea id="in-correct" rows="2" placeholder="正确答案"></textarea>
+          <span class="field-label">正确答案<span class="req">*</span></span>
+          <textarea id="in-correct" rows="2" placeholder="正确答案（可上传图片并识别）"></textarea>
         </label>
+        <div class="photo-bar">
+          <label class="photo-btn">
+            📷 上传答案图片
+            <input id="in-correct-photos" type="file" accept="image/*" capture="environment" multiple hidden />
+          </label>
+          <button class="ocr-btn" id="btn-ocr-correct" type="button">🤖 识别答案文字</button>
+        </div>
+        <div class="thumbs" id="in-correct-thumbs"></div>
+
         <label class="field">
-          <span class="field-label">解题思路 / 解析</span>
-          <textarea id="in-solution" rows="3" placeholder="正确思路、易错提醒"></textarea>
+          <div class="field-label-row">
+            <span class="field-label">解题思路 / 解析<span class="req">*</span></span>
+            <button class="mic-btn" id="btn-solution-voice" type="button">🎤 语音输入</button>
+          </div>
+          <textarea id="in-solution" rows="3" placeholder="正确思路、易错提醒（可点🎤语音输入）"></textarea>
         </label>
 
         <button class="btn-primary" id="btn-save">保存错题</button>
@@ -125,6 +151,34 @@
         <button class="btn-danger" id="btn-clear">清空全部数据</button>
         <p class="me-tip">数据默认存在本机（iPad）。导出备份可存到 iCloud / 文件 App 防丢。</p>
       </div>
+
+      <div class="card">
+        <h3 class="card-title">图片识别设置（OCR）</h3>
+        <label class="field">
+          <span class="field-label">识别方式</span>
+          <select id="ocr-provider">
+            <option value="auto">自动（有 Key 用云端 AI，否则本地）</option>
+            <option value="cloud">仅云端 AI 视觉（最准）</option>
+            <option value="local">仅本地（离线，准确度一般）</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">API 地址（云端）</span>
+          <input id="ocr-endpoint" placeholder="https://api.openai.com/v1" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span class="field-label">API Key（仅存本机，不上传第三方）</span>
+          <input id="ocr-key" type="password" placeholder="sk-... / 通义 / 智谱 / DeepSeek 等" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span class="field-label">模型</span>
+          <input id="ocr-model" placeholder="gpt-4o-mini（按服务商填写）" autocomplete="off" />
+        </label>
+        <button class="btn-outline" id="btn-ocr-save" type="button">保存识别设置</button>
+        <button class="btn-outline" id="btn-ocr-test" type="button">测试识别（选一张图）</button>
+        <input id="ocr-test-input" type="file" accept="image/*" hidden />
+        <p class="me-tip">云端方式会把图片传给对应服务商做识别以换取高准确度；Key 只存在你 iPad 本地。不填 Key 则使用本地识别（离线、免费、但中文+公式一般）。</p>
+      </div>
     </section>
   </main>
 
@@ -137,6 +191,17 @@
   <div class="modal" id="review-modal" hidden>
     <div class="modal-card" id="review-modal-card"></div>
   </div>
+
+  <!-- 图片放大 -->
+  <div class="lightbox" id="lightbox" hidden>
+    <img id="lightbox-img" src="" alt="放大查看" />
+  </div>
+
+  <!-- 识别进度提示 -->
+  <div class="toast" id="toast" hidden></div>
+
+  <!-- 复习拍照（隐藏） -->
+  <input id="rv-cam-input" type="file" accept="image/*" capture="environment" hidden />
 
   <nav class="tabbar">
     <button class="tab active" data-view="input"><span>➕</span>录入</button>
