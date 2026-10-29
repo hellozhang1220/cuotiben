@@ -160,6 +160,9 @@ select:focus, input:focus, textarea:focus {
 }
 .stat-cards .sc .num { font-size: 26px; font-weight: 800; color: var(--primary); line-height: 1.1; }
 .stat-cards .sc .lab { font-size: 12px; color: var(--muted); margin-top: 5px; }
+.stat-cards.mini { margin-bottom: 10px; }
+.stat-cards.mini .sc { padding: 11px 6px; }
+.stat-cards.mini .sc .num { font-size: 22px; }
 
 .chart-block {
   background: var(--card); border-radius: var(--radius); padding: 16px;
@@ -279,3 +282,36 @@ select:focus, input:focus, textarea:focus {
 .rev-result { font-weight: 600; flex-shrink: 0; }
 .rev-result.ok { color: var(--ok); }
 .rev-result.bad { color: var(--bad); }
+
+/* 识别题目文字只读预览 */
+.qtext-preview {
+  background: #f3f6ff; border: 1px solid #dde7ff; border-radius: 12px;
+  padding: 11px 12px; margin-bottom: 14px;
+}
+.qtext-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 12px; color: var(--muted); margin-bottom: 6px;
+}
+.qtext-clear {
+  background: var(--bad); color: #fff; border: none; border-radius: 50%;
+  width: 20px; height: 20px; font-size: 13px; line-height: 20px; padding: 0; cursor: pointer; flex-shrink: 0;
+}
+.qtext-body { font-size: 15px; color: var(--text); white-space: pre-wrap; line-height: 1.6; }
+
+/* 保存成功弹窗 */
+.success-card { text-align: center; padding-top: 28px; }
+.success-emoji { font-size: 46px; margin-bottom: 6px; animation: pop .4s ease; }
+@keyframes pop { 0% { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+.success-card h3 { margin: 0 0 8px; font-size: 19px; color: var(--ok); }
+.success-card p { font-size: 15px; color: var(--text); line-height: 1.7; margin: 0 0 18px; }
+
+/* 通用确认弹窗 */
+.confirm-card { text-align: center; padding-top: 24px; }
+.confirm-card h3 { margin: 0 0 10px; font-size: 18px; }
+.confirm-card p { font-size: 15px; color: var(--text); line-height: 1.6; margin: 0 0 16px; }
+.btn-danger-solid {
+  flex: 1; background: var(--bad); color: #fff; border: none; border-radius: 13px;
+  padding: 14px; font-size: 16px; font-weight: 600; cursor: pointer;
+  transition: transform .12s ease;
+}
+.btn-danger-solid:active { transform: scale(.98); }
