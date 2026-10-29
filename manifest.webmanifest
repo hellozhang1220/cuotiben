@@ -1,0 +1,13 @@
+{
+  "name": "错题分析与管理系统",
+  "short_name": "错题本",
+  "description": "初一到高三通用的错题记录、分析与复习系统",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f6fb",
+  "theme_color": "#3b6ef0",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
