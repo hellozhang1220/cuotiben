@@ -100,3 +100,31 @@ export function fmtDate(ts) {
   const p = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
+
+export function fmtDateTime(ts) {
+  const d = new Date(ts);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+// 全角转半角（数字、字母、标点），用于答案归一化比对
+function toHalfWidth(str) {
+  return (str || '')
+    .replace(/[！-～]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/　/g, ' ');
+}
+
+// 归一化：去空白、转小写、全角转半角，便于比较学生答案与正确答案
+export function normalizeAnswer(s) {
+  return toHalfWidth((s || '').trim().toLowerCase()).replace(/\s+/g, '');
+}
+
+// 返回 true 正确 / false 不一致 / null 无法判断（任一方为空）
+export function isAnswerMatch(student, correct) {
+  const a = normalizeAnswer(student);
+  const b = normalizeAnswer(correct);
+  if (!a || !b) return null;
+  if (a === b) return true;
+  if (b.includes(a) || a.includes(b)) return true; // 容错：一方包含另一方
+  return false;
+}
