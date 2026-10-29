@@ -50,6 +50,16 @@ main { max-width: 760px; margin: 0 auto; padding: 14px; }
 
 .field { display: block; margin-bottom: 14px; }
 .field-label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+.req { color: var(--bad); font-weight: 700; margin-left: 2px; }
+.req-note { font-size: 13px; color: var(--bad); margin: 4px 0 10px; }
+.field-label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mic-btn {
+  background: #eef3ff; color: var(--primary-d); border: 1px solid var(--primary);
+  border-radius: 10px; padding: 6px 12px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.mic-btn:active { background: #dde7ff; }
+.mic-btn:disabled { opacity: .5; }
+.mic-btn.listening { background: var(--bad); color: #fff; border-color: var(--bad); }
 .field-row { display: flex; gap: 12px; }
 .field-row .field { flex: 1; }
 
@@ -160,7 +170,16 @@ select:focus, input:focus, textarea:focus { border-color: var(--primary); }
 .tab.active { color: var(--primary); }
 
 .answer-box { margin: 12px 0; }
-.answer-box input { font-size: 17px; }
+.answer-box .answer-row { display: flex; gap: 8px; align-items: stretch; }
+.answer-box input { font-size: 17px; flex: 1; }
+.answer-box .cam-btn {
+  flex-shrink: 0; width: 52px; border: 1px solid var(--primary); background: #eef3ff; color: var(--primary-d);
+  border-radius: 10px; font-size: 22px; cursor: pointer;
+}
+.answer-box .mic-btn {
+  flex-shrink: 0; width: 52px; border: 1px solid var(--primary); background: #eef3ff; color: var(--primary-d);
+  border-radius: 10px; font-size: 20px; cursor: pointer; padding: 0;
+}
 .reveal { background: #e7f8ef; border-radius: 10px; padding: 12px; margin: 10px 0; }
 .reveal .k { color: var(--ok); font-weight: 600; font-size: 13px; }
 .reveal .v { white-space: pre-wrap; }
@@ -168,3 +187,43 @@ select:focus, input:focus, textarea:focus { border-color: var(--primary); }
 .btn-group button { flex: 1; padding: 13px; border-radius: 12px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; }
 .btn-ok { background: var(--ok); color: #fff; }
 .btn-bad { background: var(--bad); color: #fff; }
+
+/* OCR 小按钮 */
+.ocr-btn {
+  background: #eef3ff; color: var(--primary-d); border: 1px solid var(--primary);
+  border-radius: 10px; padding: 10px 12px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.ocr-btn:active { background: #dde7ff; }
+.card-title { margin: 0 0 12px; font-size: 16px; }
+
+/* 图片放大层 */
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 80; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.lightbox[hidden] { display: none; }
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 8px; }
+.zoomable { cursor: zoom-in; }
+
+/* 识别进度 toast */
+.toast {
+  position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%);
+  background: rgba(20,30,50,.9); color: #fff; padding: 10px 18px; border-radius: 999px;
+  font-size: 14px; z-index: 90; box-shadow: 0 4px 16px rgba(0,0,0,.25);
+}
+.toast[hidden] { display: none; }
+
+/* 判分结果 */
+.judge { display: block; margin: 10px 0; padding: 10px 12px; border-radius: 10px; font-size: 15px; font-weight: 600; }
+.judge.ok { background: #e7f8ef; color: var(--ok); }
+.judge.bad { background: #fdecea; color: var(--bad); }
+.judge.warn { background: #fff4e3; color: var(--warn); }
+
+/* 复习记录时间线 */
+.rev-list { margin-top: 6px; display: flex; flex-direction: column; gap: 6px; }
+.rev-row {
+  display: flex; align-items: center; gap: 10px; font-size: 13px;
+  background: #f7f9fd; border-radius: 8px; padding: 7px 10px;
+}
+.rev-idx { color: var(--muted); flex-shrink: 0; }
+.rev-time { color: var(--text); flex: 1; }
+.rev-result { font-weight: 600; flex-shrink: 0; }
+.rev-result.ok { color: var(--ok); }
+.rev-result.bad { color: var(--bad); }
