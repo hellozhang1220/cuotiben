@@ -107,6 +107,12 @@ function bindEvents() {
     if (e.target.id === 'success-modal') closeModal('success-modal');
   });
 
+  // 复习判分鼓励弹窗
+  document.getElementById('encourage-ok').addEventListener('click', () => closeModal('encourage-modal'));
+  document.getElementById('encourage-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'encourage-modal') closeModal('encourage-modal');
+  });
+
   // 通用确认弹窗（修复 iOS PWA 下原生 confirm 取消也误删的问题）
   document.getElementById('confirm-ok').addEventListener('click', () => resolveConfirm(true));
   document.getElementById('confirm-cancel').addEventListener('click', () => resolveConfirm(false));
@@ -279,6 +285,41 @@ const SUCCESS_MSGS = [
 function showSuccess() {
   const msg = SUCCESS_MSGS[Math.floor(Math.random() * SUCCESS_MSGS.length)];
   showSuccessModal(msg);
+}
+
+// 复习判分鼓励弹窗：答对 / 答错 各给一句带幽默的小鼓励，随机抽一条，每次不重样
+const ENCOURAGE_RIGHT = [
+  '漂亮！这道题已经被你彻底收服了 ✨ 它就是你的了！',
+  '答对啦 🎯 你的大脑刚刚悄悄给自己点了个赞 👍',
+  '稳！这道题现在见了你都得绕道走 😎 继续，下一个！',
+  '牛！你刚刚又点亮了一个知识点 💡 距离封神又近一步！',
+  '答对咯～这道题被你拿捏得死死的 🔒 保持这股劲！',
+  '厉害呀，这道小妖怪被你一招制服 🐉 错题本里又少一个对手！',
+];
+const ENCOURAGE_WRONG = [
+  '答错了也没关系 😏 错题本就是专门给「调皮知识点」准备的收容所，这道题已经被你盯上了，下次它可跑不掉！',
+  '哎呀，今天这道题有点倔 🐮 不过别慌，跟它混个脸熟，下次见面就是老朋友啦 💪',
+  '错了就错啦，你的大脑正在偷偷打补丁呢 🔧 它已经记在小本本上了，咱不气馁！',
+  '这次没接住？正常！孙悟空还被压了五百年呢，一道错题算啥～翻篇，下一题 ⚡',
+  '错不可怕，可怕的是错了不理它。你已经理它了，这就赢了一半 😎 继续！',
+  '没关系没关系，这道题只是想多刷一下存在感罢了 👻 记住它，下次让它闭嘴！',
+];
+function showEncourage(correct) {
+  const emoji = document.getElementById('encourage-emoji');
+  const title = document.getElementById('encourage-title');
+  const msg = document.getElementById('encourage-msg');
+  if (correct) {
+    emoji.textContent = '🎉';
+    title.textContent = '答对啦！';
+    title.style.color = 'var(--ok)';
+    msg.textContent = ENCOURAGE_RIGHT[Math.floor(Math.random() * ENCOURAGE_RIGHT.length)];
+  } else {
+    emoji.textContent = '💪';
+    title.textContent = '没关系～';
+    title.style.color = 'var(--warn)';
+    msg.textContent = ENCOURAGE_WRONG[Math.floor(Math.random() * ENCOURAGE_WRONG.length)];
+  }
+  openModal('encourage-modal');
 }
 
 // 保存成功弹窗（醒目、不易忽略）
@@ -553,9 +594,8 @@ async function finishReview(m, correct) {
   const updated = C.applyReviewResult(m, correct);
   await DB.putMistake(updated);
   closeModal('review-modal');
-  showToast(`复习已记录 ✓ ${C.fmtDate(Date.now())} · ${correct ? '这次答对了' : '这次答错了，下次加油'}`);
-  setTimeout(hideToast, 2600);
   await refresh();
+  showEncourage(correct);
 }
 
 // ---------- 语音输入（Web Speech API，免费、无需 Key，可复用到任意输入框） ----------
