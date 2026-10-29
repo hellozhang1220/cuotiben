@@ -11,6 +11,12 @@ let pendingPhotos = [];
 let pendingWrongImages = [];
 let pendingCorrectImages = [];
 
+// 识别出的题目文字（只读预览，可清除）
+let pendingQuestionText = '';
+
+// 自定义确认弹窗的 Promise resolver
+let confirmResolve = null;
+
 // ---------- 初始化 ----------
 async function init() {
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
@@ -92,6 +98,22 @@ function bindEvents() {
   document.getElementById('btn-ocr-test').addEventListener('click', () => document.getElementById('ocr-test-input').click());
   document.getElementById('ocr-test-input').addEventListener('change', testOcr);
 
+  // 识别题目文字：清除预览
+  document.getElementById('qtext-clear').addEventListener('click', () => { pendingQuestionText = ''; renderQtext(); });
+
+  // 保存成功弹窗
+  document.getElementById('success-ok').addEventListener('click', () => closeModal('success-modal'));
+  document.getElementById('success-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'success-modal') closeModal('success-modal');
+  });
+
+  // 通用确认弹窗（修复 iOS PWA 下原生 confirm 取消也误删的问题）
+  document.getElementById('confirm-ok').addEventListener('click', () => resolveConfirm(true));
+  document.getElementById('confirm-cancel').addEventListener('click', () => resolveConfirm(false));
+  document.getElementById('confirm-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'confirm-modal' || e.target.classList.contains('close-x')) resolveConfirm(false);
+  });
+
   // 复习页拍照识别
   document.getElementById('rv-cam-input').addEventListener('change', onReviewCamera);
 
@@ -145,10 +167,23 @@ async function doOcrQuestion() {
   if (!pendingPhotos.length) return tip('请先上传题目图片');
   try {
     const { text, engine } = await OCR.ocrImage(pendingPhotos, 'question', showToast);
-    document.getElementById('in-question').value = text;
+    pendingQuestionText = text;
+    renderQtext();
     showToast(`题目已识别（${engine === 'cloud' ? '云端 AI' : '本地'}），请核对`);
     setTimeout(hideToast, 1600);
   } catch (err) { showToast('识别失败：' + err.message); setTimeout(hideToast, 2000); }
+}
+
+// 渲染"识别出的题目文字"只读预览
+function renderQtext() {
+  const box = document.getElementById('qtext-preview');
+  const txt = document.getElementById('qtext-text');
+  if (pendingQuestionText && pendingQuestionText.trim()) {
+    txt.textContent = pendingQuestionText;
+    box.hidden = false;
+  } else {
+    box.hidden = true;
+  }
 }
 async function doOcrWrong() {
   if (!pendingWrongImages.length) return tip('请先上传错答图片');
@@ -177,7 +212,7 @@ function readForm() {
     reason: document.getElementById('in-reason').value,
     difficulty: document.getElementById('in-diff').value,
     knowledgePoint: document.getElementById('in-kp').value.trim(),
-    question: document.getElementById('in-question').value.trim(),
+    question: (pendingQuestionText || '').trim(),
     wrong: document.getElementById('in-wrong').value.trim(),
     correct: document.getElementById('in-correct').value.trim(),
     solution: document.getElementById('in-solution').value.trim(),
@@ -189,9 +224,10 @@ function readForm() {
 
 function clearForm() {
   pendingPhotos = []; pendingWrongImages = []; pendingCorrectImages = [];
+  pendingQuestionText = ''; renderQtext();
   renderQuestionThumbs(); renderWrongThumbs(); renderCorrectThumbs();
-  ['in-kp', 'in-question', 'in-wrong', 'in-correct', 'in-solution'].forEach((id) => (document.getElementById(id).value = ''));
-  // 注意：不再清空 saveTip，避免把"提交成功"的鼓励提示瞬间抹掉（之前 bug）
+  ['in-kp', 'in-wrong', 'in-correct', 'in-solution'].forEach((id) => (document.getElementById(id).value = ''));
+  document.getElementById('saveTip').textContent = '';
 }
 
 async function saveMistake() {
@@ -206,7 +242,7 @@ async function saveMistake() {
     const old = await DB.getMistake(editingId);
     const merged = { ...old, ...f };
     await DB.putMistake(merged);
-    tip('已保存修改');
+    showSuccessModal('已保存修改，这道题已更新 ✅');
   } else {
     const m = {
       id: C.makeId(),
@@ -241,10 +277,30 @@ const SUCCESS_MSGS = [
   '🏆 已存档！每一个被认真记录的错题，都是将来考场的加分项！',
 ];
 function showSuccess() {
-  const el = document.getElementById('saveTip');
   const msg = SUCCESS_MSGS[Math.floor(Math.random() * SUCCESS_MSGS.length)];
-  el.textContent = msg;
-  setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 4200);
+  showSuccessModal(msg);
+}
+
+// 保存成功弹窗（醒目、不易忽略）
+function showSuccessModal(msg) {
+  document.getElementById('success-msg').textContent = msg || '';
+  openModal('success-modal');
+}
+
+// 自定义确认弹窗，返回 Promise<boolean>（替代原生 confirm，修复 iOS PWA 下取消也误删）
+function showConfirm(title, msg) {
+  return new Promise((resolve) => {
+    confirmResolve = resolve;
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-msg').textContent = msg;
+    openModal('confirm-modal');
+  });
+}
+function resolveConfirm(val) {
+  closeModal('confirm-modal');
+  const r = confirmResolve;
+  confirmResolve = null;
+  if (r) r(val);
 }
 
 function tip(msg) {
@@ -261,7 +317,8 @@ function loadIntoForm(m) {
   document.getElementById('in-reason').value = m.reason;
   document.getElementById('in-diff').value = m.difficulty;
   document.getElementById('in-kp').value = m.knowledgePoint || '';
-  document.getElementById('in-question').value = m.question || '';
+  pendingQuestionText = m.question || '';
+  renderQtext();
   document.getElementById('in-wrong').value = m.wrong || '';
   document.getElementById('in-correct').value = m.correct || '';
   document.getElementById('in-solution').value = m.solution || '';
@@ -276,6 +333,7 @@ function loadIntoForm(m) {
 
 // ---------- 错题本 ----------
 function renderList() {
+  document.getElementById('list-stat').innerHTML = statCardsHtml();
   const fs = document.getElementById('f-subject').value;
   const fg = document.getElementById('f-grade').value;
   const fst = document.getElementById('f-status').value;
@@ -328,7 +386,8 @@ function openDetail(m) {
   card.querySelector('.close-x').addEventListener('click', () => closeModal('modal'));
   card.querySelector('#d-edit').addEventListener('click', () => { closeModal('modal'); loadIntoForm(m); });
   card.querySelector('#d-del').addEventListener('click', async () => {
-    if (confirm('确定删除这道错题？')) { await DB.deleteMistake(m.id); closeModal('modal'); await refresh(); }
+    const ok = await showConfirm('删除这道错题？', '删除后无法恢复，确定吗？');
+    if (ok) { await DB.deleteMistake(m.id); closeModal('modal'); await refresh(); }
   });
   openModal('modal');
 }
@@ -348,22 +407,26 @@ function reviewHistoryHtml(m) {
 
 // ---------- 分析 ----------
 function renderAnalysis() {
-  const total = DATA.length;
-  const mastered = DATA.filter((m) => m.status === C.STATUS.MASTERED).length;
-  const reviewing = DATA.filter((m) => m.status === C.STATUS.REVIEWING).length;
-  const unmastered = DATA.filter((m) => m.status === C.STATUS.UNMASTERED).length;
-
-  document.getElementById('stat-cards').innerHTML = `
-    <div class="sc"><div class="num">${total}</div><div class="lab">总错题</div></div>
-    <div class="sc"><div class="num" style="color:var(--ok)">${mastered}</div><div class="lab">已掌握</div></div>
-    <div class="sc"><div class="num" style="color:var(--warn)">${reviewing}</div><div class="lab">复习中</div></div>
-    <div class="sc"><div class="num" style="color:var(--bad)">${unmastered}</div><div class="lab">未掌握</div></div>`;
+  document.getElementById('stat-cards').innerHTML = statCardsHtml();
 
   barChart('chart-subject', '按科目分布', groupCount(DATA, 'subject'));
   barChart('chart-grade', '按年级分布', groupCount(DATA, 'grade'));
   barChart('chart-type', '按题型分布', groupCount(DATA, 'type'));
   barChart('chart-reason', '按错因分布', groupCount(DATA, 'reason'));
   barChart('chart-kp', '🔥 按知识点分布（最易错的知识点）', groupCount(DATA, 'knowledgePoint'), true);
+}
+
+// 统计卡片（错题本与分析页共用）：全部 / 已掌握 / 复习中 / 未掌握
+function statCardsHtml() {
+  const total = DATA.length;
+  const mastered = DATA.filter((m) => m.status === C.STATUS.MASTERED).length;
+  const reviewing = DATA.filter((m) => m.status === C.STATUS.REVIEWING).length;
+  const unmastered = DATA.filter((m) => m.status === C.STATUS.UNMASTERED).length;
+  return `
+    <div class="sc"><div class="num">${total}</div><div class="lab">全部</div></div>
+    <div class="sc"><div class="num" style="color:var(--ok)">${mastered}</div><div class="lab">已掌握</div></div>
+    <div class="sc"><div class="num" style="color:var(--warn)">${reviewing}</div><div class="lab">复习中</div></div>
+    <div class="sc"><div class="num" style="color:var(--bad)">${unmastered}</div><div class="lab">未掌握</div></div>`;
 }
 
 function groupCount(arr, key) {
@@ -613,7 +676,8 @@ async function importBackup(e) {
     const text = await file.text();
     const obj = JSON.parse(text);
     const items = Array.isArray(obj) ? obj : obj.items || [];
-    if (!confirm(`将导入 ${items.length} 条错题（相同 ID 会覆盖，不重复）。继续？`)) return;
+    const ok = await showConfirm('导入备份', `将导入 ${items.length} 条错题（相同 ID 会覆盖）。继续？`);
+    if (!ok) { e.target.value = ''; return; }
     for (const it of items) { if (it && it.id) await DB.putMistake(it); }
     await refresh();
     tip('导入完成');
@@ -624,7 +688,8 @@ async function importBackup(e) {
 }
 
 async function clearData() {
-  if (confirm('确定清空全部错题数据？此操作不可恢复（请先导出备份）！')) {
+  const ok = await showConfirm('清空全部数据？', '将删除所有错题，此操作不可恢复（请先导出备份）。确定？');
+  if (ok) {
     await DB.clearAll();
     await refresh();
     tip('已清空');
