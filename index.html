@@ -54,23 +54,26 @@
           <datalist id="kp-list"></datalist>
         </label>
 
-        <div class="section-title">📝 题目（图片或文字，选填）</div>
+        <div class="section-title">📝 题目（以图片为主）</div>
         <!-- 题目图片 + 自动识别题目文字 -->
-        <div class="field-label">题目图片（拍照 / 相册，可多张，可选）</div>
+        <div class="field-label">题目图片（拍照 / 相册，可多张）</div>
         <div class="photo-bar">
           <label class="photo-btn">
             📷 拍照/选图
             <input id="in-photos" type="file" accept="image/*" capture="environment" multiple hidden />
           </label>
-          <button class="ocr-btn" id="btn-ocr-question" type="button">🤖 识别题目文字</button>
+          <button class="ocr-btn" id="btn-ocr-question" type="button">🤖 识别题目文字（可选）</button>
         </div>
         <div class="photo-hint">提示：图片若同时含题目和答案，会自动只提取题目；原图可在详情里点开查看。</div>
         <div class="thumbs" id="in-thumbs"></div>
-
-        <label class="field">
-          <span class="field-label">题干（可编辑，识别后请核对，可选）</span>
-          <textarea id="in-question" rows="2" placeholder="由图片识别或手动填写，以图片为准"></textarea>
-        </label>
+        <!-- 识别出的题目文字（只读预览，可清除） -->
+        <div class="qtext-preview" id="qtext-preview" hidden>
+          <div class="qtext-head">
+            <span>已识别题目文字（自动附带，点 × 可清除）</span>
+            <button type="button" id="qtext-clear" class="qtext-clear">×</button>
+          </div>
+          <div class="qtext-body" id="qtext-text"></div>
+        </div>
 
         <div class="section-title">✏️ 作答情况</div>
         <!-- 我的错答：支持图片 -->
@@ -117,6 +120,7 @@
 
     <!-- 错题本 -->
     <section class="view" id="view-list">
+      <div class="stat-cards mini" id="list-stat"></div>
       <div class="filters">
         <select id="f-subject"></select>
         <select id="f-grade"></select>
@@ -206,6 +210,29 @@
 
   <!-- 复习拍照（隐藏） -->
   <input id="rv-cam-input" type="file" accept="image/*" capture="environment" hidden />
+
+  <!-- 保存成功弹窗 -->
+  <div class="modal" id="success-modal" hidden>
+    <div class="modal-card success-card">
+      <div class="success-emoji">🎉</div>
+      <h3 id="success-title">保存成功</h3>
+      <p id="success-msg"></p>
+      <button class="btn-primary" id="success-ok" type="button">好的</button>
+    </div>
+  </div>
+
+  <!-- 通用确认弹窗（删除/清空/导入） -->
+  <div class="modal" id="confirm-modal" hidden>
+    <div class="modal-card confirm-card">
+      <button class="close-x">×</button>
+      <h3 id="confirm-title">请确认</h3>
+      <p id="confirm-msg"></p>
+      <div class="btn-group">
+        <button class="btn-outline" id="confirm-cancel" type="button">取消</button>
+        <button class="btn-danger-solid" id="confirm-ok" type="button">确定</button>
+      </div>
+    </div>
+  </div>
 
   <nav class="tabbar">
     <button class="tab active" data-view="input"><span>➕</span>录入</button>
