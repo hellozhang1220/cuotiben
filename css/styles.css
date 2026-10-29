@@ -133,6 +133,13 @@ select:focus, input:focus, textarea:focus {
 
 .filters { display: flex; gap: 8px; margin-bottom: 12px; }
 .filters select { flex: 1; padding: 11px 8px; font-size: 14px; background: #fff; }
+.filter-tip {
+  margin: 0 2px 12px; padding: 11px 13px;
+  background: linear-gradient(135deg, #eef3ff 0%, #f3eeff 100%);
+  border: 1px dashed #c3ccf0; border-radius: 12px;
+  font-size: 14px; line-height: 1.6; color: var(--text);
+}
+.filter-tip:empty { display: none; }
 
 .list { display: flex; flex-direction: column; gap: 12px; }
 .item {
