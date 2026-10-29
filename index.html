@@ -54,8 +54,9 @@
           <datalist id="kp-list"></datalist>
         </label>
 
+        <div class="section-title">📝 题目（图片或文字，选填）</div>
         <!-- 题目图片 + 自动识别题目文字 -->
-        <div class="field-label">题目图片（拍照 / 相册，可多张）<span class="req">*</span></div>
+        <div class="field-label">题目图片（拍照 / 相册，可多张，可选）</div>
         <div class="photo-bar">
           <label class="photo-btn">
             📷 拍照/选图
@@ -67,10 +68,11 @@
         <div class="thumbs" id="in-thumbs"></div>
 
         <label class="field">
-          <span class="field-label">题干（可编辑，识别后请核对）<span class="req">*</span></span>
+          <span class="field-label">题干（可编辑，识别后请核对，可选）</span>
           <textarea id="in-question" rows="2" placeholder="由图片识别或手动填写，以图片为准"></textarea>
         </label>
 
+        <div class="section-title">✏️ 作答情况</div>
         <!-- 我的错答：支持图片 -->
         <label class="field">
           <span class="field-label">我的错答<span class="req">*</span></span>
@@ -99,6 +101,7 @@
         </div>
         <div class="thumbs" id="in-correct-thumbs"></div>
 
+        <div class="section-title">🧠 解析与巩固</div>
         <label class="field">
           <div class="field-label-row">
             <span class="field-label">解题思路 / 解析<span class="req">*</span></span>
@@ -129,6 +132,7 @@
       <div class="chart-block" id="chart-grade"></div>
       <div class="chart-block" id="chart-type"></div>
       <div class="chart-block" id="chart-reason"></div>
+      <div class="chart-block" id="chart-kp"></div>
     </section>
 
     <!-- 复习 -->
