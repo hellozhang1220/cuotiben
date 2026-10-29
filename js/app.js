@@ -191,14 +191,13 @@ function clearForm() {
   pendingPhotos = []; pendingWrongImages = []; pendingCorrectImages = [];
   renderQuestionThumbs(); renderWrongThumbs(); renderCorrectThumbs();
   ['in-kp', 'in-question', 'in-wrong', 'in-correct', 'in-solution'].forEach((id) => (document.getElementById(id).value = ''));
-  document.getElementById('saveTip').textContent = '';
+  // 注意：不再清空 saveTip，避免把"提交成功"的鼓励提示瞬间抹掉（之前 bug）
 }
 
 async function saveMistake() {
   const f = readForm();
   if (!f.subject) return tip('请选择科目');
-  // 必填校验：题目 / 错答 / 正确答案 文字或图片二选一即可；解题思路需文字
-  if (!fieldFilled(f.question, f.images)) return tip('📌 题目还没记录哦（拍照传图或写题干都行）');
+  // 必填校验：题目/题干为可选；错答 / 正确答案 文字或图片二选一即可；解题思路需文字
   if (!fieldFilled(f.wrong, f.wrongImages)) return tip('📌 我的错答还没记录哦（传图或写文字都行）');
   if (!fieldFilled(f.correct, f.correctImages)) return tip('📌 正确答案还没记录哦（传图或写文字都行）');
   if (!f.solution.trim()) return tip('📌 解题思路还没写，写上更易掌握～');
@@ -364,6 +363,7 @@ function renderAnalysis() {
   barChart('chart-grade', '按年级分布', groupCount(DATA, 'grade'));
   barChart('chart-type', '按题型分布', groupCount(DATA, 'type'));
   barChart('chart-reason', '按错因分布', groupCount(DATA, 'reason'));
+  barChart('chart-kp', '🔥 按知识点分布（最易错的知识点）', groupCount(DATA, 'knowledgePoint'), true);
 }
 
 function groupCount(arr, key) {
@@ -372,16 +372,19 @@ function groupCount(arr, key) {
   return Object.entries(map).sort((a, b) => b[1] - a[1]);
 }
 
-function barChart(elId, title, pairs) {
+function barChart(elId, title, pairs, highlightTop) {
   const el = document.getElementById(elId);
   if (!pairs.length) { el.innerHTML = `<h4>${title}</h4><div class="empty">暂无数据</div>`; return; }
   const max = Math.max(...pairs.map((p) => p[1]));
-  el.innerHTML = `<h4>${title}</h4>` + pairs.map(([name, val]) => `
+  el.innerHTML = `<h4>${title}</h4>` + pairs.map(([name, val]) => {
+    const isTop = highlightTop && val === max;
+    return `
     <div class="bar-row">
-      <div class="name">${name}</div>
-      <div class="track"><div class="fill" style="width:${Math.round((val / max) * 100)}%"></div></div>
+      <div class="name">${name || '未填知识点'}${isTop ? ' 🔥' : ''}</div>
+      <div class="track"><div class="fill${isTop ? ' danger' : ''}" style="width:${Math.round((val / max) * 100)}%"></div></div>
       <div class="val">${val}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ---------- 复习（只显示题目，答案藏在"对答案"后） ----------
@@ -637,6 +640,7 @@ async function refresh() {
 }
 
 function goView(name) {
+  if (name === 'input') { const st = document.getElementById('saveTip'); if (st) st.textContent = ''; } // 清掉"编辑中"等残留提示
   document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === name));
