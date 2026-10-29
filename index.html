@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="错题本" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <title>错题分析与管理系统</title>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-title" id="topTitle">录入错题</div>
+  </header>
+
+  <main id="main">
+    <!-- 录入 -->
+    <section class="view active" id="view-input">
+      <div class="card">
+        <label class="field">
+          <span class="field-label">科目</span>
+          <select id="in-subject"></select>
+        </label>
+        <label class="field">
+          <span class="field-label">年级</span>
+          <select id="in-grade"></select>
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">来源</span>
+            <select id="in-source"></select>
+          </label>
+          <label class="field">
+            <span class="field-label">题型</span>
+            <select id="in-type"></select>
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">错因</span>
+            <select id="in-reason"></select>
+          </label>
+          <label class="field">
+            <span class="field-label">难度</span>
+            <select id="in-diff"></select>
+          </label>
+        </div>
+        <label class="field">
+          <span class="field-label">知识点</span>
+          <input id="in-kp" list="kp-list" placeholder="如：一元一次方程" autocomplete="off" />
+          <datalist id="kp-list"></datalist>
+        </label>
+
+        <div class="field-label">题目图片（拍照 / 相册，可多张）</div>
+        <div class="photo-bar">
+          <label class="photo-btn">
+            📷 拍照/选图
+            <input id="in-photos" type="file" accept="image/*" capture="environment" multiple hidden />
+          </label>
+          <span class="photo-hint" id="photoHint">建议横屏拍清楚</span>
+        </div>
+        <div class="thumbs" id="in-thumbs"></div>
+
+        <label class="field">
+          <span class="field-label">题干（可选，图片看不清可补录）</span>
+          <textarea id="in-question" rows="2" placeholder="可留空，以图片为准"></textarea>
+        </label>
+        <label class="field">
+          <span class="field-label">我的错答</span>
+          <textarea id="in-wrong" rows="2" placeholder="当时怎么答的"></textarea>
+        </label>
+        <label class="field">
+          <span class="field-label">正确答案</span>
+          <textarea id="in-correct" rows="2" placeholder="正确答案"></textarea>
+        </label>
+        <label class="field">
+          <span class="field-label">解题思路 / 解析</span>
+          <textarea id="in-solution" rows="3" placeholder="正确思路、易错提醒"></textarea>
+        </label>
+
+        <button class="btn-primary" id="btn-save">保存错题</button>
+        <div class="save-tip" id="saveTip"></div>
+      </div>
+    </section>
+
+    <!-- 错题本 -->
+    <section class="view" id="view-list">
+      <div class="filters">
+        <select id="f-subject"></select>
+        <select id="f-grade"></select>
+        <select id="f-status"></select>
+      </div>
+      <div class="list" id="list-container"></div>
+    </section>
+
+    <!-- 分析 -->
+    <section class="view" id="view-analysis">
+      <div class="stat-cards" id="stat-cards"></div>
+      <div class="chart-block" id="chart-subject"></div>
+      <div class="chart-block" id="chart-grade"></div>
+      <div class="chart-block" id="chart-type"></div>
+      <div class="chart-block" id="chart-reason"></div>
+    </section>
+
+    <!-- 复习 -->
+    <section class="view" id="view-review">
+      <div class="review-head" id="review-head"></div>
+      <div class="list" id="review-container"></div>
+    </section>
+
+    <!-- 我的 -->
+    <section class="view" id="view-me">
+      <div class="card">
+        <label class="field">
+          <span class="field-label">当前年级（录入默认 & 可切换）</span>
+          <select id="me-grade"></select>
+        </label>
+        <p class="me-tip">切换年级后，历史错题会按原年级保留，互不干扰。</p>
+        <button class="btn-outline" id="btn-export">导出备份（JSON + 图片）</button>
+        <button class="btn-outline" id="btn-import">导入备份</button>
+        <input id="import-file" type="file" accept="application/json" hidden />
+        <button class="btn-danger" id="btn-clear">清空全部数据</button>
+        <p class="me-tip">数据默认存在本机（iPad）。导出备份可存到 iCloud / 文件 App 防丢。</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- 详情弹层 -->
+  <div class="modal" id="modal" hidden>
+    <div class="modal-card" id="modal-card"></div>
+  </div>
+
+  <!-- 复习作答弹层 -->
+  <div class="modal" id="review-modal" hidden>
+    <div class="modal-card" id="review-modal-card"></div>
+  </div>
+
+  <nav class="tabbar">
+    <button class="tab active" data-view="input"><span>➕</span>录入</button>
+    <button class="tab" data-view="list"><span>📚</span>错题本</button>
+    <button class="tab" data-view="analysis"><span>📊</span>分析</button>
+    <button class="tab" data-view="review"><span>🔁</span>复习</button>
+    <button class="tab" data-view="me"><span>👤</span>我的</button>
+  </nav>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
