@@ -384,6 +384,8 @@ function renderList() {
     (fst === '全部' || C.STATUS_LABEL[m.status] === fst)
   ).sort((a, b) => b.createdAt - a.createdAt);
 
+  renderFilterTip(fs, fg, fst, items);
+
   const box = document.getElementById('list-container');
   if (!items.length) { box.innerHTML = '<div class="empty">还没有符合条件的错题，去录一道吧～</div>'; return; }
   box.innerHTML = '';
@@ -468,6 +470,34 @@ function statCardsHtml() {
     <div class="sc"><div class="num" style="color:var(--ok)">${mastered}</div><div class="lab">已掌握</div></div>
     <div class="sc"><div class="num" style="color:var(--warn)">${reviewing}</div><div class="lab">复习中</div></div>
     <div class="sc"><div class="num" style="color:var(--bad)">${unmastered}</div><div class="lab">未掌握</div></div>`;
+}
+
+// 错题本：根据当前筛选条件（科目 / 年级 / 掌握情况）动态生成一句文字统计提示
+function renderFilterTip(fs, fg, fst, items) {
+  const tipEl = document.getElementById('list-filter-tip');
+  if (!tipEl) return;
+  const scope = scopeText(fs, fg, fst);
+  const total = items.length;
+  const mastered = items.filter((m) => m.status === C.STATUS.MASTERED).length;
+  const reviewing = items.filter((m) => m.status === C.STATUS.REVIEWING).length;
+  const unmastered = items.filter((m) => m.status === C.STATUS.UNMASTERED).length;
+  let msg;
+  if (fst === '全部') {
+    msg = `${scope}共有错题 ${total} 个，已掌握 ${mastered} 个，复习中 ${reviewing} 个，未掌握 ${unmastered} 个。`;
+  } else {
+    const label = fst;
+    msg = `${scope}（${label}）共 ${total} 个，其中已掌握 ${mastered} 个，复习中 ${reviewing} 个，未掌握 ${unmastered} 个。`;
+  }
+  tipEl.textContent = msg;
+}
+
+// 把筛选条件拼成可读的范围描述，例如「英语科目 · 初一」
+function scopeText(fs, fg, fst) {
+  const subj = fs === '全部' ? '全部科目' : fs + '科目';
+  const parts = [subj];
+  if (fg !== '全部') parts.push(fg);
+  if (fst !== '全部') parts.push(fst);
+  return parts.join(' · ') + '：';
 }
 
 function groupCount(arr, key) {
