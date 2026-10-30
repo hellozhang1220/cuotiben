@@ -112,10 +112,11 @@ select:focus, input:focus, textarea:focus {
 .split-card { position: relative; width: 100%; margin-bottom: 14px; background: #f3f5fb; border: 1px solid var(--line); border-radius: 14px; padding: 8px; }
 .split-img-wrap { position: relative; width: 100%; border-radius: 10px; overflow: hidden; }
 .split-img-wrap img { width: 100%; display: block; border-radius: 10px; }
-.split-line { position: absolute; left: 0; right: 0; top: 70%; height: 0; border-top: 3px dashed #ff4d4f; pointer-events: none; }
+.split-line { position: absolute; left: 0; right: 0; top: 70%; height: 0; border-top: 3px dashed #ff4d4f; pointer-events: auto; cursor: row-resize; touch-action: none; z-index: 2; }
+.split-handle { position: absolute; left: 50%; top: -15px; transform: translateX(-50%); width: 32px; height: 30px; background: #ff4d4f; color: #fff; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px; line-height: 1; box-shadow: 0 2px 8px rgba(255,77,79,.45); user-select: none; }
 .split-line::after { content: '分割线'; position: absolute; right: 6px; top: -17px; font-size: 11px; color: #ff4d4f; background: rgba(255,255,255,.9); padding: 0 4px; border-radius: 4px; }
 .split-range { width: 100%; margin: 8px 0 2px; accent-color: #ff4d4f; }
-.split-label { font-size: 12px; color: #8a93a6; text-align: center; }
+.split-label { font-size: 12px; color: #ff4d4f; text-align: center; font-weight: 600; }
 .split-del { position: absolute; top: 4px; right: 4px; background: var(--bad); color: #fff; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 16px; line-height: 28px; padding: 0; z-index: 3; }
 
 .btn-primary {
