@@ -34,7 +34,7 @@
           <datalist id="kp-list"></datalist>
         </label>
 
-        <div class="section-title">📝 上传我的错题（以图片为主）</div>
+        <div class="section-title">📝 上传我的错题</div>
         <!-- 题目图片 + 自动识别题目文字 -->
         <div class="field-label">拍照 / 相册上传（可多张）</div>
         <div class="photo-bar">
@@ -44,7 +44,6 @@
           </label>
           <button class="ocr-btn" id="btn-ocr-question" type="button">🤖 识别题目文字（可选）</button>
         </div>
-        <div class="photo-hint">提示：图片若同时含题目和答案，会自动只提取题目；原图可在详情里点开查看。</div>
         <div class="thumbs" id="in-thumbs"></div>
         <!-- 识别出的题目文字（只读预览，可清除） -->
         <div class="qtext-preview" id="qtext-preview" hidden>
@@ -150,9 +149,6 @@
 
   <!-- 识别进度提示 -->
   <div class="toast" id="toast" hidden></div>
-
-  <!-- 复习拍照（隐藏） -->
-  <input id="rv-cam-input" type="file" accept="image/*" capture="environment" hidden />
 
   <!-- 保存成功弹窗 -->
   <div class="modal" id="success-modal" hidden>
