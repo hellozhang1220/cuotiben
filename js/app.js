@@ -11,6 +11,12 @@ let pendingPhotos = [];
 let pendingWrongImages = [];
 let pendingCorrectImages = [];
 
+// 每张上传图的「题/答分割比例」：上方(0~1)为题目，下方为答案；默认 0.7
+let pendingSplits = [];
+
+// 本次编辑会话中是否已重新上传图片（决定保存时是否重新裁切）
+let photosChanged = false;
+
 // 识别出的题目文字（只读预览，可清除）
 let pendingQuestionText = '';
 
@@ -67,7 +73,10 @@ function bindEvents() {
 
   document.getElementById('in-subject').addEventListener('change', updateKpList);
 
-  document.getElementById('in-photos').addEventListener('change', (e) => handlePhotoInput(e, pendingPhotos, renderQuestionThumbs));
+  document.getElementById('in-photos').addEventListener('change', (e) => {
+    photosChanged = true;
+    handlePhotoInput(e, pendingPhotos, renderPhotos);
+  });
 
   document.getElementById('btn-ocr-question').addEventListener('click', doOcrQuestion);
 
@@ -112,9 +121,6 @@ function bindEvents() {
     if (e.target.id === 'confirm-modal' || e.target.classList.contains('close-x')) resolveConfirm(false);
   });
 
-  // 复习页拍照识别
-  document.getElementById('rv-cam-input').addEventListener('change', onReviewCamera);
-
   // 点击可放大图片
   document.addEventListener('click', (e) => {
     const z = e.target.closest('.zoomable');
@@ -142,22 +148,63 @@ async function handlePhotoInput(e, arr, render) {
 }
 
 // 通用缩略图渲染（带删除 + 点击放大）
-function renderImgThumbs(boxId, arr, onChange) {
+function renderImgThumbs(boxId, arr, onChange, deletable) {
   const box = document.getElementById(boxId);
   box.innerHTML = '';
   arr.forEach((src, i) => {
     const wrap = document.createElement('div');
     wrap.className = 'thumb';
-    wrap.innerHTML = `<img class="zoomable" src="${src}"><button class="del" data-i="${i}">×</button>`;
-    wrap.querySelector('.del').addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      arr.splice(i, 1);
-      onChange();
-    });
+    wrap.innerHTML = `<img class="zoomable" src="${src}">${deletable ? `<button class="del" data-i="${i}">×</button>` : ''}`;
+    if (deletable) {
+      wrap.querySelector('.del').addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        arr.splice(i, 1);
+        onChange();
+      });
+    }
     box.appendChild(wrap);
   });
 }
-function renderQuestionThumbs() { renderImgThumbs('in-thumbs', pendingPhotos, renderQuestionThumbs); }
+function renderQuestionThumbs() { renderImgThumbs('in-thumbs', pendingPhotos, () => renderPhotos(), false); }
+
+// 根据是否换过图，决定用「分割编辑器」还是「普通缩略图」
+function renderPhotos() {
+  if (photosChanged) renderSplitEditor();
+  else renderQuestionThumbs();
+}
+
+// 上传合照（题目+答案在同一张）后，让孩子拖动分割线把图分成「题目」与「答案」
+function renderSplitEditor() {
+  const box = document.getElementById('in-thumbs');
+  box.innerHTML = '';
+  pendingPhotos.forEach((src, i) => {
+    const ratio = pendingSplits[i] != null ? pendingSplits[i] : 0.7;
+    const card = document.createElement('div');
+    card.className = 'split-card';
+    card.innerHTML = `
+      <div class="split-img-wrap">
+        <img class="zoomable" src="${src}">
+        <div class="split-line" style="top:${ratio * 100}%"></div>
+      </div>
+      <input type="range" class="split-range" min="10" max="100" value="${Math.round(ratio * 100)}">
+      <div class="split-label">↑ 上方=题目　下方=答案 ↓（滑到最底=本张无答案）</div>
+      <button class="split-del" data-i="${i}" type="button">×</button>`;
+    const range = card.querySelector('.split-range');
+    const line = card.querySelector('.split-line');
+    range.addEventListener('input', () => {
+      const r = parseInt(range.value, 10) / 100;
+      pendingSplits[i] = r;
+      line.style.top = (r * 100) + '%';
+    });
+    card.querySelector('.split-del').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      pendingPhotos.splice(i, 1);
+      pendingSplits.splice(i, 1);
+      renderSplitEditor();
+    });
+    box.appendChild(card);
+  });
+}
 function renderWrongThumbs() { renderImgThumbs('in-wrong-thumbs', pendingWrongImages, renderWrongThumbs); }
 function renderCorrectThumbs() { renderImgThumbs('in-correct-thumbs', pendingCorrectImages, renderCorrectThumbs); }
 
@@ -201,6 +248,38 @@ async function doOcrCorrect() {
   } catch (err) { showToast('识别失败：' + err.message); setTimeout(hideToast, 2000); }
 }
 
+// 按分割比例把一张图裁成「题目」(上方) 与「答案」(下方) 两张；ratio>=0.99 视为无答案
+function cropImage(dataUrl, ratio) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const w = img.naturalWidth, h = img.naturalHeight;
+      const splitY = Math.max(1, Math.round(h * ratio));
+      const mk = (sy, sh) => {
+        if (sh <= 1) return null;
+        const c = document.createElement('canvas');
+        c.width = w; c.height = sh;
+        c.getContext('2d').drawImage(img, 0, sy, w, sh, 0, 0, w, sh);
+        return c.toDataURL('image/jpeg', 0.85);
+      };
+      resolve({ q: mk(0, splitY), a: mk(splitY, h - splitY) });
+    };
+    img.onerror = () => resolve({ q: dataUrl, a: null });
+    img.src = dataUrl;
+  });
+}
+
+async function splitIntoMedia(photos, splits) {
+  const images = [], correctImages = [];
+  for (let i = 0; i < photos.length; i++) {
+    const ratio = splits[i] != null ? splits[i] : 0.7;
+    const { q, a } = await cropImage(photos[i], ratio);
+    if (q) images.push(q);
+    if (a) correctImages.push(a);
+  }
+  return { images, correctImages };
+}
+
 function readForm() {
   return {
     subject: document.getElementById('in-subject').value,
@@ -213,8 +292,10 @@ function readForm() {
 
 function clearForm() {
   pendingPhotos = [];
+  pendingSplits = [];
+  photosChanged = false;
   pendingQuestionText = ''; renderQtext();
-  renderQuestionThumbs();
+  renderPhotos();
   document.getElementById('in-kp').value = '';
   document.getElementById('saveTip').textContent = '';
 }
@@ -229,10 +310,14 @@ async function saveMistake() {
 
   if (editingId) {
     const old = await DB.getMistake(editingId);
-    const merged = { ...old, ...f };
+    let media;
+    if (photosChanged) media = await splitIntoMedia(pendingPhotos, pendingSplits);
+    else media = { images: old.images || [], correctImages: old.correctImages || [] };
+    const merged = { ...old, ...f, images: media.images, correctImages: media.correctImages };
     await DB.putMistake(merged);
     showSuccessModal('已保存修改，这道题已更新 ✅');
   } else {
+    const media = await splitIntoMedia(pendingPhotos, pendingSplits);
     const m = {
       id: C.makeId(),
       createdAt: Date.now(),
@@ -241,6 +326,8 @@ async function saveMistake() {
       nextReviewAt: Date.now(),
       reviewHistory: [],
       ...f,
+      images: media.images,
+      correctImages: media.correctImages,
     };
     await DB.putMistake(m);
     showSuccess();
@@ -340,7 +427,9 @@ function loadIntoForm(m) {
   pendingQuestionText = m.question || '';
   renderQtext();
   pendingPhotos = (m.images || []).slice();
-  renderQuestionThumbs();
+  pendingSplits = (m.images || []).map(() => 1.0); // 旧图已是题面，整张=题目，避免误切出答案
+  photosChanged = false;
+  renderPhotos();
   document.getElementById('btn-save').textContent = '保存修改';
   document.getElementById('saveTip').textContent = '编辑中：保存后回到错题本';
   goView('input');
@@ -524,72 +613,41 @@ function openReview(m) {
   const card = document.getElementById('review-modal-card');
   const qImgs = (m.images || []).map((s) => `<img class="zoomable" src="${s}">`).join('');
   const cImgs = (m.correctImages || []).map((s) => `<img class="zoomable" src="${s}">`).join('');
+  const correctText = m.correct
+    ? `<div class="reveal"><div class="k">正确答案</div><div class="v">${escapeHtml(m.correct)}</div></div>`
+    : '<div class="reveal"><div class="k">正确答案</div><div class="v muted">（录入时未记录答案）</div></div>';
+  const hasAnswer = m.correct || cImgs || m.solution;
   card.innerHTML = `
     <button class="close-x">×</button>
     <h3>${m.subject} · ${m.grade} · ${m.knowledgePoint || ''}</h3>
-    <div class="row"><span class="k">题目（先自己答，答案在下面）</span></div>
+    <div class="row"><span class="k">题目（先自己想，答案在下面）</span></div>
     ${qImgs ? `<div class="row">${qImgs}</div>` : ''}
     ${m.question ? `<div class="row"><div class="v">${escapeHtml(m.question)}</div></div>` : ''}
-    <div class="answer-box">
-      <div class="answer-row">
-        <input id="rv-answer" placeholder="写下答案，或点 🎤 语音 / 📷 拍照">
-        <button class="mic-btn" id="rv-voice" type="button">🎤</button>
-        <button class="cam-btn" id="rv-cam" type="button">📷</button>
-      </div>
-    </div>
-    <button class="btn-primary" id="rv-reveal">判分 / 对答案</button>
-    <div id="rv-result" style="display:none">
-      ${m.correct ? `<div class="reveal"><div class="k">正确答案</div><div class="v">${escapeHtml(m.correct)}</div></div>` : '<div class="reveal"><div class="k">正确答案</div><div class="v muted">（录入时未记录答案）</div></div>'}
+    ${hasAnswer ? `
+    <button class="btn-outline" id="rv-reveal">显示正确答案</button>
+    <div id="rv-answer-block" style="display:none">
+      ${correctText}
       ${cImgs ? `<div class="reveal"><div class="k">正确答案图片</div>${cImgs}</div>` : ''}
       ${m.solution ? `<div class="reveal"><div class="k">解题思路</div><div class="v">${escapeHtml(m.solution)}</div></div>` : ''}
-      <div id="rv-judge"></div>
-      <div class="btn-group">
-        <button class="btn-ok" id="rv-ok">我答对了 ✓</button>
-        <button class="btn-bad" id="rv-bad">答错了 ✗</button>
-      </div>
-    </div>`;
+    </div>` : ''}
+    <div class="btn-group">
+      <button class="btn-ok" id="rv-ok">我答对了 ✓</button>
+      <button class="btn-bad" id="rv-bad">答错了 ✗</button>
+    </div>
+    <div class="judge-hint">请自行判断，本次这道题是否答对</div>`;
   card.querySelector('.close-x').addEventListener('click', () => closeModal('review-modal'));
-  card.querySelector('#rv-cam').addEventListener('click', () => document.getElementById('rv-cam-input').click());
-  attachVoiceInput(card.querySelector('#rv-answer'), card.querySelector('#rv-voice'));
-  card.querySelector('#rv-reveal').addEventListener('click', () => runJudge(m, card));
+  if (hasAnswer) {
+    const revealBtn = card.querySelector('#rv-reveal');
+    const block = card.querySelector('#rv-answer-block');
+    revealBtn.addEventListener('click', () => {
+      const show = block.style.display === 'none';
+      block.style.display = show ? 'block' : 'none';
+      revealBtn.textContent = show ? '隐藏正确答案' : '显示正确答案';
+    });
+  }
   card.querySelector('#rv-ok').addEventListener('click', () => finishReview(m, true));
   card.querySelector('#rv-bad').addEventListener('click', () => finishReview(m, false));
   openModal('review-modal');
-}
-
-async function runJudge(m, card) {
-  card.querySelector('#rv-result').style.display = 'block';
-  card.querySelector('#rv-reveal').style.display = 'none';
-  const judgeEl = card.querySelector('#rv-judge');
-  const student = (card.querySelector('#rv-answer').value || '').trim();
-
-  if (!student) { judgeEl.innerHTML = '<span class="judge warn">⚠ 未填写答案，请自行核对后选择</span>'; return; }
-  if (!m.correct) { judgeEl.innerHTML = '<span class="judge warn">⚠ 本题未记录文字答案，请自行核对后选择</span>'; return; }
-
-  const quick = C.isAnswerMatch(student, m.correct);
-  if (quick === true) {
-    judgeEl.innerHTML = '<span class="judge ok">✓ 答案一致，看起来答对了</span>';
-    return;
-  }
-  // 不一致：尝试云端 AI 复核（若已配置）
-  const ai = await OCR.judgeEquivalent(student, m.correct, m.question, showToast);
-  setTimeout(hideToast, 1500);
-  if (ai === true) judgeEl.innerHTML = '<span class="judge ok">✓ AI 判定作答正确</span>';
-  else if (ai === false) judgeEl.innerHTML = '<span class="judge bad">✗ 与正确答案不一致，请确认</span>';
-  else judgeEl.innerHTML = '<span class="judge warn">⚠ 自动判定不确定，请自行核对后选择</span>';
-}
-
-async function onReviewCamera(e) {
-  const f = e.target.files && e.target.files[0];
-  if (!f) return;
-  const dataUrl = await C.compressImage(f, 1200, 0.8);
-  try {
-    const { text } = await OCR.ocrImage([dataUrl], 'all', showToast);
-    const inp = document.getElementById('rv-answer');
-    if (inp) inp.value = text;
-    showToast('已识别，请核对'); setTimeout(hideToast, 1600);
-  } catch (err) { showToast('识别失败：' + err.message); setTimeout(hideToast, 2000); }
-  e.target.value = '';
 }
 
 async function finishReview(m, correct) {
@@ -600,70 +658,7 @@ async function finishReview(m, correct) {
   showEncourage(correct);
 }
 
-// ---------- 语音输入（Web Speech API，免费、无需 Key，可复用到任意输入框） ----------
-function attachVoiceInput(targetEl, btnEl) {
-  if (!targetEl || !btnEl) return;
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const idleText = btnEl.textContent || '🎤';
-  if (!SR) {
-    btnEl.disabled = true; btnEl.textContent = idleText; btnEl.title = '当前浏览器不支持语音输入';
-    return;
-  }
-  let rec = null;
-  let baseline = '';
-  let finalText = '';
-  let listening = false;
-
-  btnEl.addEventListener('click', () => {
-    if (listening) { try { rec.stop(); } catch (e) {} return; }
-    rec = new SR();
-    rec.lang = 'zh-CN';
-    rec.interimResults = true;
-    rec.continuous = true;
-    baseline = targetEl.value;
-    finalText = '';
-    rec.onresult = (e) => {
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i];
-        if (r.isFinal) finalText += r[0].transcript;
-        else interim += r[0].transcript;
-      }
-      targetEl.value = baseline + finalText + interim;
-    };
-    rec.onstart = () => {
-      listening = true;
-      btnEl.classList.add('listening');
-      btnEl.textContent = '⏹ 停止';
-      showToast('聆听中…说吧');
-    };
-    rec.onend = () => {
-      listening = false;
-      btnEl.classList.remove('listening');
-      btnEl.textContent = idleText;
-      hideToast();
-      targetEl.value = baseline + finalText; // 去掉临时识别片段，保留已确定的文字
-      targetEl.focus();
-    };
-    rec.onerror = (e) => {
-      listening = false;
-      btnEl.classList.remove('listening');
-      btnEl.textContent = idleText;
-      hideToast();
-      const map = {
-        'not-allowed': '麦克风权限被拒绝，请在浏览器中允许',
-        'no-speech': '没听到声音，再试一次',
-        'network': '网络异常，语音识别需要联网',
-        'aborted': '',
-      };
-      const msg = map[e.error] || ('语音识别出错：' + e.error);
-      if (msg) { showToast(msg); setTimeout(hideToast, 2500); }
-    };
-    try { rec.start(); } catch (err) { /* 已启动则忽略 */ }
-  });
-}
-
-// 录入页已无语音输入（解题思路字段已移除）；复习页的语音在打开复习弹窗时动态绑定
+// 录入与复习页的语音按钮均已移除；initVoiceInput 保留为空函数占位（init 中仍调用）
 function initVoiceInput() {}
 
 // ---------- OCR 设置 ----------
