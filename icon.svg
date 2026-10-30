@@ -1,47 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#5B8DEF"/>
-      <stop offset="1" stop-color="#7C5CFC"/>
-    </linearGradient>
-    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="1" stop-color="#EEF2FF"/>
-    </linearGradient>
-  </defs>
-
-  <!-- 背景铺满（iOS 会自动裁圆角，所以铺满整张） -->
-  <rect width="1024" height="1024" fill="url(#bg)"/>
-
+  <!-- 深蓝圆角底（iOS 自动裁圆角，这里保留圆角观感更统一） -->
+  <rect x="0" y="0" width="1024" height="1024" rx="220" fill="#1E3A8A"/>
   <!-- 柔光装饰 -->
-  <circle cx="160" cy="170" r="130" fill="#FFFFFF" opacity="0.12"/>
-  <circle cx="890" cy="880" r="160" fill="#FFFFFF" opacity="0.10"/>
-
-  <!-- 卡片阴影 -->
-  <rect x="252" y="332" width="520" height="432" rx="72" fill="#1B2A5B" opacity="0.18"/>
-  <!-- 卡片本体 -->
-  <rect x="242" y="312" width="520" height="432" rx="72" fill="url(#card)"/>
-
-  <!-- 卡片顶部小标题条 -->
-  <rect x="312" y="372" width="200" height="46" rx="23" fill="#5B8DEF"/>
-  <rect x="532" y="384" width="120" height="22" rx="11" fill="#D7DEEC"/>
-
-  <!-- 题目文字行 -->
-  <rect x="312" y="452" width="360" height="28" rx="14" fill="#D7DEEC"/>
-  <rect x="312" y="510" width="380" height="28" rx="14" fill="#D7DEEC"/>
-  <rect x="312" y="568" width="240" height="28" rx="14" fill="#E6EAF5"/>
-
-  <!-- 红色 ✕ 徽章（错题） -->
-  <circle cx="690" cy="430" r="70" fill="#FF5B6E"/>
-  <path d="M662 402 L718 458 M718 402 L662 458" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round"/>
-
-  <!-- 绿色 ✓ 徽章（改对） -->
-  <circle cx="690" cy="640" r="70" fill="#34C77B"/>
-  <path d="M658 640 L682 666 L724 620" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-
-  <!-- 金色小星星（内收避开圆角裁剪区） -->
-  <path transform="translate(222,232) scale(44)" fill="#FFD45E"
-        d="M0,-1 L0.2245,-0.309 L0.951,-0.309 L0.363,0.118 L0.588,0.809 L0,0.382 L-0.588,0.809 L-0.363,0.118 L-0.951,-0.309 L-0.2245,-0.309 Z"/>
-  <path transform="translate(852,272) scale(34)" fill="#FFD45E"
-        d="M0,-1 L0.2245,-0.309 L0.951,-0.309 L0.363,0.118 L0.588,0.809 L0,0.382 L-0.588,0.809 L-0.363,0.118 L-0.951,-0.309 L-0.2245,-0.309 Z"/>
+  <circle cx="180" cy="180" r="120" fill="#FFFFFF" opacity="0.10"/>
+  <circle cx="860" cy="860" r="150" fill="#FFFFFF" opacity="0.08"/>
+  <!-- 白色「错」字 + 红色描边 -->
+  <text x="512" y="540" font-family="Microsoft YaHei, PingFang SC, Hiragino Sans GB, sans-serif"
+        font-size="700" font-weight="700" fill="#FFFFFF" stroke="#FF3B30" stroke-width="18"
+        stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">错</text>
 </svg>
