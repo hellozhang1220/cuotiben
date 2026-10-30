@@ -108,6 +108,16 @@ select:focus, input:focus, textarea:focus {
   box-shadow: 0 2px 6px rgba(240,82,77,.4);
 }
 
+/* 录入：题目/答案分割编辑器 */
+.split-card { position: relative; width: 100%; margin-bottom: 14px; background: #f3f5fb; border: 1px solid var(--line); border-radius: 14px; padding: 8px; }
+.split-img-wrap { position: relative; width: 100%; border-radius: 10px; overflow: hidden; }
+.split-img-wrap img { width: 100%; display: block; border-radius: 10px; }
+.split-line { position: absolute; left: 0; right: 0; top: 70%; height: 0; border-top: 3px dashed #ff4d4f; pointer-events: none; }
+.split-line::after { content: '分割线'; position: absolute; right: 6px; top: -17px; font-size: 11px; color: #ff4d4f; background: rgba(255,255,255,.9); padding: 0 4px; border-radius: 4px; }
+.split-range { width: 100%; margin: 8px 0 2px; accent-color: #ff4d4f; }
+.split-label { font-size: 12px; color: #8a93a6; text-align: center; }
+.split-del { position: absolute; top: 4px; right: 4px; background: var(--bad); color: #fff; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 16px; line-height: 28px; padding: 0; z-index: 3; }
+
 .btn-primary {
   width: 100%; background: linear-gradient(135deg, #4c6ef5, #6d5cf0); color: #fff; border: none;
   border-radius: 14px; padding: 15px; font-size: 17px; font-weight: 600; cursor: pointer;
@@ -249,6 +259,7 @@ select:focus, input:focus, textarea:focus {
 .btn-group button:active { transform: scale(.98); }
 .btn-ok { background: var(--ok); color: #fff; }
 .btn-bad { background: var(--bad); color: #fff; }
+.judge-hint { color: #e74c3c; font-size: 13px; text-align: center; margin-top: 10px; font-weight: 600; }
 
 /* OCR 小按钮 */
 .ocr-btn {
