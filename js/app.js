@@ -183,19 +183,41 @@ function renderSplitEditor() {
     card.className = 'split-card';
     card.innerHTML = `
       <div class="split-img-wrap">
-        <img class="zoomable" src="${src}">
-        <div class="split-line" style="top:${ratio * 100}%"></div>
+        <img src="${src}">
+        <div class="split-line" style="top:${ratio * 100}%"><span class="split-handle">⇕</span></div>
       </div>
       <input type="range" class="split-range" min="10" max="100" value="${Math.round(ratio * 100)}">
-      <div class="split-label">↑ 上方=题目　下方=答案 ↓（滑到最底=本张无答案）</div>
+      <div class="split-label">在图片上直接拖动红线分隔：上方=题目，下方=答案（滑到最底=本张无答案）</div>
       <button class="split-del" data-i="${i}" type="button">×</button>`;
     const range = card.querySelector('.split-range');
     const line = card.querySelector('.split-line');
-    range.addEventListener('input', () => {
-      const r = parseInt(range.value, 10) / 100;
+    const wrap = card.querySelector('.split-img-wrap');
+
+    const setRatio = (r) => {
+      r = Math.max(0.1, Math.min(1, r));
       pendingSplits[i] = r;
       line.style.top = (r * 100) + '%';
+      range.value = Math.round(r * 100);
+    };
+    range.addEventListener('input', () => setRatio(parseInt(range.value, 10) / 100));
+
+    // 直接在图片上拖动红线（手指/鼠标），比滑块更精准
+    let dragging = false;
+    const moveTo = (clientY) => {
+      const rect = wrap.getBoundingClientRect();
+      if (!rect.height) return;
+      setRatio((clientY - rect.top) / rect.height);
+    };
+    line.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      try { line.setPointerCapture(e.pointerId); } catch (_) {}
+      e.preventDefault();
     });
+    line.addEventListener('pointermove', (e) => { if (dragging) moveTo(e.clientY); });
+    const stop = (e) => { dragging = false; try { line.releasePointerCapture(e.pointerId); } catch (_) {} };
+    line.addEventListener('pointerup', stop);
+    line.addEventListener('pointercancel', stop);
+
     card.querySelector('.split-del').addEventListener('click', (ev) => {
       ev.stopPropagation();
       pendingPhotos.splice(i, 1);
@@ -615,8 +637,8 @@ function openReview(m) {
   const cImgs = (m.correctImages || []).map((s) => `<img class="zoomable" src="${s}">`).join('');
   const correctText = m.correct
     ? `<div class="reveal"><div class="k">正确答案</div><div class="v">${escapeHtml(m.correct)}</div></div>`
-    : '<div class="reveal"><div class="k">正确答案</div><div class="v muted">（录入时未记录答案）</div></div>';
-  const hasAnswer = m.correct || cImgs || m.solution;
+    : '';
+  const hasAnswer = cImgs || m.solution || m.correct;
   card.innerHTML = `
     <button class="close-x">×</button>
     <h3>${m.subject} · ${m.grade} · ${m.knowledgePoint || ''}</h3>
