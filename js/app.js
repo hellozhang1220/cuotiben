@@ -24,10 +24,6 @@ async function init() {
   }
   fillSelect('in-subject', C.SUBJECTS);
   fillSelect('in-grade', C.GRADES, currentGrade());
-  fillSelect('in-source', C.SOURCES);
-  fillSelect('in-type', C.TYPES);
-  fillSelect('in-reason', C.REASONS);
-  fillSelect('in-diff', C.DIFFICULTIES);
   fillSelect('me-grade', C.GRADES, currentGrade());
   fillSelect('f-subject', ['全部', ...C.SUBJECTS]);
   fillSelect('f-grade', ['全部', ...C.GRADES]);
@@ -72,12 +68,8 @@ function bindEvents() {
   document.getElementById('in-subject').addEventListener('change', updateKpList);
 
   document.getElementById('in-photos').addEventListener('change', (e) => handlePhotoInput(e, pendingPhotos, renderQuestionThumbs));
-  document.getElementById('in-wrong-photos').addEventListener('change', (e) => handlePhotoInput(e, pendingWrongImages, renderWrongThumbs));
-  document.getElementById('in-correct-photos').addEventListener('change', (e) => handlePhotoInput(e, pendingCorrectImages, renderCorrectThumbs));
 
   document.getElementById('btn-ocr-question').addEventListener('click', doOcrQuestion);
-  document.getElementById('btn-ocr-wrong').addEventListener('click', doOcrWrong);
-  document.getElementById('btn-ocr-correct').addEventListener('click', doOcrCorrect);
 
   document.getElementById('btn-save').addEventListener('click', saveMistake);
 
@@ -213,36 +205,27 @@ function readForm() {
   return {
     subject: document.getElementById('in-subject').value,
     grade: document.getElementById('in-grade').value,
-    source: document.getElementById('in-source').value,
-    type: document.getElementById('in-type').value,
-    reason: document.getElementById('in-reason').value,
-    difficulty: document.getElementById('in-diff').value,
     knowledgePoint: document.getElementById('in-kp').value.trim(),
     question: (pendingQuestionText || '').trim(),
-    wrong: document.getElementById('in-wrong').value.trim(),
-    correct: document.getElementById('in-correct').value.trim(),
-    solution: document.getElementById('in-solution').value.trim(),
     images: pendingPhotos.slice(),
-    wrongImages: pendingWrongImages.slice(),
-    correctImages: pendingCorrectImages.slice(),
   };
 }
 
 function clearForm() {
-  pendingPhotos = []; pendingWrongImages = []; pendingCorrectImages = [];
+  pendingPhotos = [];
   pendingQuestionText = ''; renderQtext();
-  renderQuestionThumbs(); renderWrongThumbs(); renderCorrectThumbs();
-  ['in-kp', 'in-wrong', 'in-correct', 'in-solution'].forEach((id) => (document.getElementById(id).value = ''));
+  renderQuestionThumbs();
+  document.getElementById('in-kp').value = '';
   document.getElementById('saveTip').textContent = '';
 }
 
 async function saveMistake() {
   const f = readForm();
   if (!f.subject) return tip('请选择科目');
-  // 必填校验：题目/题干为可选；错答 / 正确答案 文字或图片二选一即可；解题思路需文字
-  if (!fieldFilled(f.wrong, f.wrongImages)) return tip('📌 我的错答还没记录哦（传图或写文字都行）');
-  if (!fieldFilled(f.correct, f.correctImages)) return tip('📌 正确答案还没记录哦（传图或写文字都行）');
-  if (!f.solution.trim()) return tip('📌 解题思路还没写，写上更易掌握～');
+  if (!f.grade) return tip('请选择年级');
+  if (!f.knowledgePoint) return tip('📌 请填写「错题知识类型」');
+  // 题目：图片或识别出的文字至少一项
+  if (!fieldFilled(f.question, f.images)) return tip('📌 请上传错题图片，或识别题目文字（至少一项）');
 
   if (editingId) {
     const old = await DB.getMistake(editingId);
@@ -353,20 +336,11 @@ function loadIntoForm(m) {
   editingId = m.id;
   document.getElementById('in-subject').value = m.subject;
   document.getElementById('in-grade').value = m.grade;
-  document.getElementById('in-source').value = m.source;
-  document.getElementById('in-type').value = m.type;
-  document.getElementById('in-reason').value = m.reason;
-  document.getElementById('in-diff').value = m.difficulty;
   document.getElementById('in-kp').value = m.knowledgePoint || '';
   pendingQuestionText = m.question || '';
   renderQtext();
-  document.getElementById('in-wrong').value = m.wrong || '';
-  document.getElementById('in-correct').value = m.correct || '';
-  document.getElementById('in-solution').value = m.solution || '';
   pendingPhotos = (m.images || []).slice();
-  pendingWrongImages = (m.wrongImages || []).slice();
-  pendingCorrectImages = (m.correctImages || []).slice();
-  renderQuestionThumbs(); renderWrongThumbs(); renderCorrectThumbs();
+  renderQuestionThumbs();
   document.getElementById('btn-save').textContent = '保存修改';
   document.getElementById('saveTip').textContent = '编辑中：保存后回到错题本';
   goView('input');
@@ -396,7 +370,7 @@ function renderList() {
       ${m.images && m.images[0] ? `<img class="thumb-sm zoomable" src="${m.images[0]}">` : '<div class="thumb-sm"></div>'}
       <div class="meta">
         <div class="t1">${m.subject} · ${m.grade} <span class="badge ${m.status}">${C.STATUS_LABEL[m.status]}</span></div>
-        <div class="t2">${m.type} · ${m.knowledgePoint || '未填知识点'} · ${m.reason}</div>
+        <div class="t2">错题知识类型：${m.knowledgePoint || '未填写'}</div>
         <div class="t3">${C.fmtDate(m.createdAt)}</div>
       </div>`;
     el.addEventListener('click', () => openDetail(m));
@@ -454,9 +428,7 @@ function renderAnalysis() {
 
   barChart('chart-subject', '按科目分布', groupCount(DATA, 'subject'));
   barChart('chart-grade', '按年级分布', groupCount(DATA, 'grade'));
-  barChart('chart-type', '按题型分布', groupCount(DATA, 'type'));
-  barChart('chart-reason', '按错因分布', groupCount(DATA, 'reason'));
-  barChart('chart-kp', '🔥 按知识点分布（最易错的知识点）', groupCount(DATA, 'knowledgePoint'), true);
+  barChart('chart-kp', '🔥 按错题知识类型分布（最易错的）', groupCount(DATA, 'knowledgePoint'), true);
 }
 
 // 统计卡片（错题本与分析页共用）：全部 / 已掌握 / 复习中 / 未掌握
@@ -567,7 +539,7 @@ function openReview(m) {
     </div>
     <button class="btn-primary" id="rv-reveal">判分 / 对答案</button>
     <div id="rv-result" style="display:none">
-      <div class="reveal"><div class="k">正确答案</div><div class="v">${escapeHtml(m.correct)}</div></div>
+      ${m.correct ? `<div class="reveal"><div class="k">正确答案</div><div class="v">${escapeHtml(m.correct)}</div></div>` : '<div class="reveal"><div class="k">正确答案</div><div class="v muted">（录入时未记录答案）</div></div>'}
       ${cImgs ? `<div class="reveal"><div class="k">正确答案图片</div>${cImgs}</div>` : ''}
       ${m.solution ? `<div class="reveal"><div class="k">解题思路</div><div class="v">${escapeHtml(m.solution)}</div></div>` : ''}
       <div id="rv-judge"></div>
@@ -691,10 +663,8 @@ function attachVoiceInput(targetEl, btnEl) {
   });
 }
 
-// 录入页"解题思路"语音按钮
-function initVoiceInput() {
-  attachVoiceInput(document.getElementById('in-solution'), document.getElementById('btn-solution-voice'));
-}
+// 录入页已无语音输入（解题思路字段已移除）；复习页的语音在打开复习弹窗时动态绑定
+function initVoiceInput() {}
 
 // ---------- OCR 设置 ----------
 function loadOcrSettings() {
