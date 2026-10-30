@@ -28,35 +28,15 @@
           <span class="field-label">年级</span>
           <select id="in-grade"></select>
         </label>
-        <div class="field-row">
-          <label class="field">
-            <span class="field-label">来源</span>
-            <select id="in-source"></select>
-          </label>
-          <label class="field">
-            <span class="field-label">题型</span>
-            <select id="in-type"></select>
-          </label>
-        </div>
-        <div class="field-row">
-          <label class="field">
-            <span class="field-label">错因</span>
-            <select id="in-reason"></select>
-          </label>
-          <label class="field">
-            <span class="field-label">难度</span>
-            <select id="in-diff"></select>
-          </label>
-        </div>
         <label class="field">
-          <span class="field-label">知识点</span>
+          <span class="field-label">错题知识类型</span>
           <input id="in-kp" list="kp-list" placeholder="如：一元一次方程" autocomplete="off" />
           <datalist id="kp-list"></datalist>
         </label>
 
-        <div class="section-title">📝 题目（以图片为主）</div>
+        <div class="section-title">📝 上传我的错题（以图片为主）</div>
         <!-- 题目图片 + 自动识别题目文字 -->
-        <div class="field-label">题目图片（拍照 / 相册，可多张）</div>
+        <div class="field-label">拍照 / 相册上传（可多张）</div>
         <div class="photo-bar">
           <label class="photo-btn">
             📷 拍照/选图
@@ -75,43 +55,7 @@
           <div class="qtext-body" id="qtext-text"></div>
         </div>
 
-        <div class="section-title">✏️ 作答情况</div>
-        <!-- 我的错答：支持图片 -->
-        <label class="field">
-          <span class="field-label">我的错答<span class="req">*</span></span>
-          <textarea id="in-wrong" rows="2" placeholder="当时怎么答的（可上传图片）"></textarea>
-        </label>
-        <div class="photo-bar">
-          <label class="photo-btn">
-            📷 上传错答图片
-            <input id="in-wrong-photos" type="file" accept="image/*" capture="environment" multiple hidden />
-          </label>
-          <button class="ocr-btn" id="btn-ocr-wrong" type="button">🤖 识别文字</button>
-        </div>
-        <div class="thumbs" id="in-wrong-thumbs"></div>
 
-        <!-- 正确答案：支持图片 + 识别 -->
-        <label class="field">
-          <span class="field-label">正确答案<span class="req">*</span></span>
-          <textarea id="in-correct" rows="2" placeholder="正确答案（可上传图片并识别）"></textarea>
-        </label>
-        <div class="photo-bar">
-          <label class="photo-btn">
-            📷 上传答案图片
-            <input id="in-correct-photos" type="file" accept="image/*" capture="environment" multiple hidden />
-          </label>
-          <button class="ocr-btn" id="btn-ocr-correct" type="button">🤖 识别答案文字</button>
-        </div>
-        <div class="thumbs" id="in-correct-thumbs"></div>
-
-        <div class="section-title">🧠 解析与巩固</div>
-        <label class="field">
-          <div class="field-label-row">
-            <span class="field-label">解题思路 / 解析<span class="req">*</span></span>
-            <button class="mic-btn" id="btn-solution-voice" type="button">🎤 语音输入</button>
-          </div>
-          <textarea id="in-solution" rows="3" placeholder="正确思路、易错提醒（可点🎤语音输入）"></textarea>
-        </label>
 
         <button class="btn-primary" id="btn-save">保存错题</button>
         <div class="save-tip" id="saveTip"></div>
@@ -135,8 +79,6 @@
       <div class="stat-cards" id="stat-cards"></div>
       <div class="chart-block" id="chart-subject"></div>
       <div class="chart-block" id="chart-grade"></div>
-      <div class="chart-block" id="chart-type"></div>
-      <div class="chart-block" id="chart-reason"></div>
       <div class="chart-block" id="chart-kp"></div>
     </section>
 
